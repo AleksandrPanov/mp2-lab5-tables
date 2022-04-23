@@ -45,12 +45,11 @@ void timeTest()
 {
     // UNIX Time // POSIX-time
     // 00:00:00 1.01.1970
-    int64_t t = getNowTime();
+    int64_t t = Order::getNowTime();
     cout << t << endl;
-    struct tm tm;
-    localtime_s(&tm, &t);
+    struct tm* tm = localtime(&t);
     char date[20];
-    strftime(date, sizeof(date), "%Y-%m-%d", &tm);
+    strftime(date, sizeof(date), "%Y-%m-%d", tm);
     string d = date;
     cout << d << endl;
 }
@@ -79,10 +78,9 @@ void hashTabe()
 }
 void threadTest()
 {
-    StockMarket market;
-    Order req(Order::Type::BUY, 950, 100);
-    Order order(Order::Type::BUY, 900, 90);
-
+    StockMarker market;
+    Request req;
+    Order order;
     const int numReq = 1000;
 
     std::thread thread([&]() {
@@ -100,31 +98,23 @@ void threadTest()
     thread.join();
 }
 
-void main()
+int  main()
 {
-    StockMarket market;
+	StockMarker burse;
+	burse.addRequestSafe(NewUserRequest(12));
+	burse.addRequestSafe(NewUserRequest(14));
+	burse.addRequestSafe(NewUserRequest(205));
+	//burse.addRequestSafe(Order(Order::OrderType::BuyRequest, 100, 0, 12));
+	//burse.addRequestSafe(Order(Order::OrderType::SaleRequest, 99, 0, 12));
+	burse.addRequestSafe(Order(Order::OrderType::BuyRequest, 204, 0, 12));
+	burse.addRequestSafe(Order(Order::OrderType::SaleRequest, 203, 0, 12));
+	burse.addRequestSafe(Order(Order::OrderType::SaleRequest, 201, 0, 12));
+	burse.addRequestSafe(Order(Order::OrderType::BuyRequest, 202, 0, 14));
+	for (int i = 0; i < 9; ++i)
+	{
+		burse.processFirstRequestSafe();
+	}
 
-    market.addRequestSafe(Registration(10));
-    market.addRequestSafe(Registration(12));
-
-    market.addRequestSafe(Order(Order::Type::BUY, 1000, 10));
-    market.addRequestSafe(Order(Order::Type::SELL, 1001, 12));
-    market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-
-
-    market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
-
-    auto order = Order(Order::Type::BUY, 100, 12);
-    market.addRequestSafe(order);
-    market.addRequestSafe(CancelOrder(order));
-
-    for (int i = 0; i < 10000; i++)
-        market.processFirstRequestSafe();
+    return 0;
 }
+
