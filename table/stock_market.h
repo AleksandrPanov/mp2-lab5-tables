@@ -110,7 +110,7 @@ public:
     void addRequest(const T& request)
     {
         logl("Request added to queue");
-        requestQueue.push(std::unique_ptr<Request>(new T(request)));
+        requestQueue.push(std::make_unique<T>(request));
     }
 
     template<class T>
@@ -118,7 +118,7 @@ public:
     {
         logl("Request added safe to queue");
         std::lock_guard<std::mutex> lock(queueMutex);
-        requestQueue.push(std::unique_ptr<Request>(new T(request)));
+        requestQueue.push(std::make_unique<T>(request));
     }
 
     void processRequest(Request& request)
@@ -206,6 +206,6 @@ private:
             throw std::runtime_error("No active order with that price");
 
         table.remove(it);
-        logl("Order canceled success");
+        logl("Order is canceled success");
     }
 };
