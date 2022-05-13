@@ -384,19 +384,15 @@ class AVLTable
 
         bool operator==(AVLTableIterator const& other) const
         {
-            return p == other.p;
+            return _node.lock() == other._node.lock();
         }
         bool operator!=(AVLTableIterator const& other) const
         {
-            return p != other.p;
+            return _node.lock() != other._node.lock();
         }
         AVLTableIterator::reference operator*() const
         {
             return _node.lock()->value;
-        }
-        AVLTableIterator& operator++()
-        {
-            return *this;
         }
     private:
         std::weak_ptr<AVLTable::Node> _node = nullptr;
@@ -421,7 +417,7 @@ public:
 
     TValue& operator[](const TKey& key)
     {
-        return *find(_root, key);
+        return *find(key);
     }
 
 private:

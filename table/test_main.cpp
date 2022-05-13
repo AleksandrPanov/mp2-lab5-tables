@@ -232,6 +232,14 @@ void testAVLTable()
     stable.insert("1234567", "1234567");
 
     stable.remove("123456");
+
+    auto b = it7 == it11;
+    auto b1 = it7 == it7;
+    auto b2 = it7 == table.find(1111);
+    auto b3 = table.find(1111) == table.find(1111);
+
+    auto& u = stable["123"];
+    stable["123"] = "0000";
 }
 
 void main()
