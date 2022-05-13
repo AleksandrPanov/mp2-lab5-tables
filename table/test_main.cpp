@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <ctime>
+#include <algorithm>
 #include <thread>
 
 #include "table.h"
@@ -161,9 +162,7 @@ void testHashTable()
     HashTable<std::string, int> table;
 
     for (auto it = table.begin(); it != table.end(); ++it)
-    {
         std::cout << *it << " ";
-    }
 
     table.insert("begin", 0);
     table.insert("begin1", 11);
@@ -193,16 +192,55 @@ void testHashTable()
     auto it8 = table.end();
 
     for (auto it = table.begin(); it != table.end(); ++it)
-    {
         std::cout << *it << " ";
-    }
+}
+
+void testAVLTable()
+{
+    auto table = AVLTable<int, int>();
+
+    auto it = table.insert(100, 100);
+    table.insert(1001, 222);
+    table.insert(99, 33);
+
+    table.insert(1002, 44);
+    table.insert(1003, 55);
+    table.insert(1004, 66);
+
+    table.remove(1002);
+    table.remove(1003);
+    table.remove(1005);
+
+    auto it1 = table.find(1004);
+    auto itNull = table.find(1005);
+
+    table.insert(1005, 5);
+    table.insert(1006, 6);
+    table.insert(1007, 7);
+    table.insert(1008, 8);
+    table.insert(1009, 9);
+
+    auto it7 = table.find(1007);
+    auto it11 = table.find(1001);
+
+    auto stable = AVLTable<std::string, std::string>();
+
+    stable.insert("123", "123");
+    stable.insert("1234", "1234");
+    stable.insert("12345", "12345");
+    stable.insert("123456", "123456");
+    stable.insert("1234567", "1234567");
+
+    stable.remove("123456");
 }
 
 void main()
 {
-    testMarket();
+    //testMarket();
 
     //testSortTable();
 
     //testHashTable();
+
+    testAVLTable();
 }

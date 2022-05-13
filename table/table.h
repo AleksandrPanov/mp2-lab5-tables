@@ -249,8 +249,9 @@ class HashTable
 private:
     using Map = std::vector<SortTable<KeyType, ValueType> >;
 
-    const size_t _mapSize = 100;
-    Map _map = Map(_mapSize, SortTable<KeyType, ValueType>());
+    static constexpr size_t _baseMapSize = 100;
+
+    Map _map = Map(_baseMapSize, SortTable<KeyType, ValueType>());
     std::hash<KeyType> _hasher;
 
     size_t getPos(const KeyType& key)
@@ -260,22 +261,12 @@ private:
 
 public:
     template<class KeyType, class ValueType>
-    class HashIterator
+    class HashIterator : std::iterator<std::input_iterator_tag, ValueType>
     {
         friend class HashTable<KeyType, ValueType>;
 
-        Map& _map;
-        size_t _pos;
-        OwnIterator<KeyType, ValueType> _pairIterator;
-
-        HashIterator(Map& map, size_t pos, OwnIterator<KeyType, ValueType> it) :
-            _map(map),
-            _pos(pos),
-            _pairIterator(it)
-        {   }
-
     public:
-        ValueType& operator*() const
+        HashIterator::reference operator*() const
         {
             return *_pairIterator;
         }
@@ -309,6 +300,17 @@ public:
         {
             return _pairIterator != sec._pairIterator;
         }
+
+    private:
+        Map& _map;
+        size_t _pos;
+        OwnIterator<KeyType, ValueType> _pairIterator;
+
+        HashIterator(Map& map, size_t pos, OwnIterator<KeyType, ValueType> it) :
+            _map(map),
+            _pos(pos),
+            _pairIterator(it)
+        {   }
     };
 
     HashIterator<KeyType, ValueType> begin()
@@ -352,6 +354,241 @@ public:
     ValueType& operator[](const KeyType& key)
     {
         return *find(key);
+    }
+};
+
+template<class TKey, class TValue>
+class AVLTable 
+{
+    struct Node
+    {
+        Node(const TKey& key, const TValue& value) :
+            key(key),
+            value(value)
+        {   }
+
+        TKey key;
+        TValue value;
+        std::shared_ptr<Node> left = nullptr;
+        std::shared_ptr<Node> right = nullptr;
+        int height = 1;
+    };
+
+    template<class TKey, class TValue>
+    class AVLTableIterator : public std::iterator<std::input_iterator_tag, TValue>
+    {
+    public:
+        AVLTableIterator(std::weak_ptr<AVLTable::Node> node) :
+            _node(node)
+        {   }
+
+        bool operator==(AVLTableIterator const& other) const
+        {
+            return p == other.p;
+        }
+        bool operator!=(AVLTableIterator const& other) const
+        {
+            return p != other.p;
+        }
+        AVLTableIterator::reference operator*() const
+        {
+            return _node.lock()->value;
+        }
+        AVLTableIterator& operator++()
+        {
+            return *this;
+        }
+    private:
+        std::weak_ptr<AVLTable::Node> _node = nullptr;
+    };
+
+public:
+    AVLTableIterator<TKey, TValue> insert(const TKey& key, const TValue& value)
+    {
+        _root = insertNode(_root, key, value);
+        return AVLTableIterator<TKey, TValue>(_root);
+    }
+
+    AVLTableIterator<TKey, TValue> find(const TKey& key)
+    {
+        return AVLTableIterator<TKey, TValue>(findKey(_root, key));
+    }
+
+    void remove(const TKey& key)
+    {
+        removeNode(_root, key);
+    }
+
+    TValue& operator[](const TKey& key)
+    {
+        return *find(_root, key);
+    }
+
+private:
+    std::shared_ptr<Node> _root = nullptr;
+
+    std::shared_ptr<Node> findKey(std::shared_ptr<Node> root, const TKey& key)
+    {
+        auto current = root;
+        while (current && current->key != key)
+            current = key < current->key ? current->left : current->right;
+        return current;
+    }
+
+    int getHeight(std::shared_ptr<Node> node) 
+    {
+        if (node == nullptr) 
+            return 0;
+        return node->height;
+    }
+
+    std::shared_ptr<Node> rightRotate(std::shared_ptr<Node>& y)
+    {
+        auto x = y->left;
+        auto T2 = x->right;
+
+        x->right = y;
+        y->left = T2;
+        
+        y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;
+        x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;
+        return x;
+    }
+
+    std::shared_ptr<Node> leftRotate(std::shared_ptr<Node>& x) 
+    {
+        auto y = x->right;
+        auto T2 = y->left;
+
+        y->left = x;
+        x->right = T2;
+
+        x->height = std::max(getHeight(x->left), getHeight(x->right)) + 1;
+        y->height = std::max(getHeight(y->left), getHeight(y->right)) + 1;
+        return y;
+    }
+
+    int getBalanceFactor(std::shared_ptr<Node> node) 
+    {
+        if (node == nullptr) return 0;
+        return getHeight(node->left) - getHeight(node->right);
+    }
+
+    std::shared_ptr<Node> insertNode(std::shared_ptr<Node> root, const TKey& key, const TValue& value) 
+    {
+        if (root == nullptr) 
+            return std::make_shared<Node>(key, value);
+        
+        if (key < root->key)
+            root->left = insertNode(root->left, key, value);
+        else if (key > root->key)
+            root->right = insertNode(root->right, key, value);
+        else
+            throw std::runtime_error("Node with that key already exist");
+
+        root->height = 1 + std::max(getHeight(root->left), getHeight(root->right));
+        auto balanceFactor = getBalanceFactor(root);
+        if (balanceFactor > 1)
+        {
+            if (key < root->left->key)
+            {
+                return rightRotate(root);
+            }
+            else if (key > root->left->key)
+            {
+                root->left = leftRotate(root->left);
+                return rightRotate(root);
+            }
+        }
+        if (balanceFactor < -1)
+        {
+            if (key > root->right->key)
+            {
+                return leftRotate(root);
+            }
+            else if (key < root->right->key) 
+            {
+                root->right = rightRotate(root->right);
+                return leftRotate(root);
+            }
+        }
+        return root;
+    }
+
+    std::shared_ptr<Node> getMimumKeyNode(std::shared_ptr<Node> node) 
+    {
+        auto current = node;
+        while (current->left != nullptr)
+            current = current->left;
+        return current;
+    }
+
+    std::shared_ptr<Node> removeNode(std::shared_ptr<Node> root, const TKey& key) 
+    {
+        if (root == nullptr) 
+            return root;
+
+        if (key < root->key)
+        {
+            root->left = removeNode(root->left, key);
+        }
+        else if (key > root->key)
+        {
+            root->right = removeNode(root->right, key);
+        }
+        else
+        {
+            if ((root->left == nullptr) || (root->right == nullptr))
+            {
+                auto temp = root->left ? root->left : root->right;
+                if (temp == nullptr)
+                {
+                    temp = root;
+                    root = nullptr;
+                }
+                else
+                {
+                    *root = *temp;
+                }
+            }
+            else
+            {
+                auto temp = getMimumKeyNode(root->right);
+                root->key = temp->key;
+                root->right = removeNode(root->right, temp->key);
+            }
+        }
+
+        if (root == nullptr)
+            return root;
+
+        root->height = 1 + std::max(getHeight(root->left), getHeight(root->right));
+
+        int balanceFactor = getBalanceFactor(root);
+        if (balanceFactor > 1)
+        {
+            if (getBalanceFactor(root->left) >= 0)
+            {
+                return rightRotate(root);
+            }
+            else
+            {
+                root->left = leftRotate(root->left);
+                return rightRotate(root);
+            }
+        }
+        if (balanceFactor < -1)
+        {
+            if (getBalanceFactor(root->right) <= 0)
+            {
+                return leftRotate(root);
+            }
+            else {
+                root->right = rightRotate(root->right);
+                return leftRotate(root);
+            }
+        }
+        return root;
     }
 };
 
