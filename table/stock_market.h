@@ -101,9 +101,9 @@ class StockMarker
 {
     std::queue<std::unique_ptr<Request>> requestQueue;
     std::mutex mutex;
-    SimpleTable<int64_t, Order> orderBuyTable;  // price -> order
-    SimpleTable<int64_t, Order> orderSellTable; // price -> order
-    SimpleTable<int64_t, std::vector<Order> > userTable;      // user id -> orders
+	HashTable<int64_t, Order> orderBuyTable;  // price -> order
+	HashTable<int64_t, Order> orderSellTable; // price -> order
+	HashTable<int64_t, std::vector<Order> > userTable;      // user id -> orders
 
 public:
     template<typename T>
@@ -124,14 +124,6 @@ public:
     {
         if (req.type == Request::RequestType::Order)
         {
-            /*try {
-                Order& r = dynamic_cast<Order&>(req);
-            }
-            catch (...)
-            {
-
-            }
-            Order* r1 = dynamic_cast<Order*>(&req);*/
             Order& r = static_cast<Order&>(req);
             if (r.orderType == Order::OrderType::BuyRequest)
             {
@@ -143,8 +135,11 @@ public:
 				if (min_price != nullptr && r.get_price() >= min_price->first)
 				{
 					//SUCCESS
+					auto iter = userTable.find(min_price->second.getUserId());
+					auto &vec = iter.getPtr()->second;
+					std::remove(vec.begin(), vec.end(), min_price->second);
 					orderSellTable.remove(min_price->first);
-					std::cout << "Success: " << r.get_price() << '\n';
+					std::cout << "Successful: " << " Seller: " << r.getUserId() << " Buyer: " << min_price->second.getUserId() << " Price: " << min_price->first << std::endl;
 				}
 				else
 				{
@@ -166,8 +161,11 @@ public:
 				if (max_price != nullptr && r.get_price() <= max_price->first)
 				{
 					//SUCCESS
+					auto iter = userTable.find(max_price->second.getUserId());
+					auto &vec = iter.getPtr()->second;
+					std::remove(vec.begin(), vec.end(), max_price->second);
 					orderBuyTable.remove(max_price->first);
-					std::cout << "Success: " << r.get_price() << '\n';
+					std::cout << "Successful: " << " Seller: " << r.getUserId() << " Buyer: " << max_price->second.getUserId() << " Price: " << max_price->first << std::endl;
 				}
 				else
 				{
@@ -185,14 +183,12 @@ public:
             }
             else if (r.orderType == Order::OrderType::CancelBuyRequest)
             {
-                // check orderBuyTable
-                    // если такой запрос есть, его нужно удалить
 				if (orderBuyTable.find(r.get_price()) != orderBuyTable.end())
 				{
 					orderBuyTable.remove(r.get_price());
 					auto iter = userTable.find(r.getUserId());
-					auto vec = &(iter.getPtr()->second);
-					std::remove(vec->begin(), vec->end(), r);
+					auto &vec = iter.getPtr()->second;
+					std::remove(vec.begin(), vec.end(), r);
 				}
             }
 			else if (r.orderType == Order::OrderType::CancelSellRequest)
@@ -201,8 +197,8 @@ public:
 				{
 					orderSellTable.remove(r.get_price());
 					auto iter = userTable.find(r.getUserId());
-					auto vec = &(iter.getPtr()->second);
-					std::remove(vec->begin(), vec->end(), r);
+					auto &vec = iter.getPtr()->second;
+					std::remove(vec.begin(), vec.end(), r);
 				}
 			}
         }

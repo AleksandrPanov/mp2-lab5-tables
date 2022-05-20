@@ -98,23 +98,35 @@ void threadTest()
     thread.join();
 }
 
-int  main()
+void simple_test()
 {
 	StockMarker burse;
-	burse.addRequestSafe(NewUserRequest(12));
-	burse.addRequestSafe(NewUserRequest(14));
-	burse.addRequestSafe(NewUserRequest(205));
-	//burse.addRequestSafe(Order(Order::OrderType::BuyRequest, 100, 0, 12));
-	//burse.addRequestSafe(Order(Order::OrderType::SaleRequest, 99, 0, 12));
-	burse.addRequestSafe(Order(Order::OrderType::BuyRequest, 204, 0, 12));
-	burse.addRequestSafe(Order(Order::OrderType::SaleRequest, 203, 0, 12));
-	burse.addRequestSafe(Order(Order::OrderType::SaleRequest, 201, 0, 12));
-	burse.addRequestSafe(Order(Order::OrderType::BuyRequest, 202, 0, 14));
-	for (int i = 0; i < 9; ++i)
+	for (int i = 0; i < 50; ++i)
+	{
+		burse.addRequestSafe(NewUserRequest(115 * i));
+	}
+	for (int i = 0; i < 50; ++i)
+	{
+		burse.addRequestSafe(Order(Order::OrderType::BuyRequest, 250 - rand() % 100, 0, 115 * i));
+	}
+	for (int i = 0; i < 50; ++i)
+	{
+		burse.addRequestSafe(Order(Order::OrderType::SaleRequest, 200 - rand() % 100, 0, 115 * i));
+	}
+	for (int i = 0; i < 150; ++i)
 	{
 		burse.processFirstRequestSafe();
+		if (i == 99)
+		{
+			std::cout << ' ';
+		}
 	}
+	getchar();
+}
 
+int  main()
+{
+	simple_test();
     return 0;
 }
 
