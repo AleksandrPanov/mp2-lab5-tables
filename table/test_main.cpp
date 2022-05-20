@@ -45,12 +45,11 @@ void timeTest()
 {
     // UNIX Time // POSIX-time
     // 00:00:00 1.01.1970
-    int64_t t = getNowTime();
+    int64_t t = Order::getNowTime();
     cout << t << endl;
-    struct tm tm;
-    localtime_s(&tm, &t);
+    struct tm* tm = localtime(&t);
     char date[20];
-    strftime(date, sizeof(date), "%Y-%m-%d", &tm);
+    strftime(date, sizeof(date), "%Y-%m-%d", tm);
     string d = date;
     cout << d << endl;
 }
@@ -79,10 +78,9 @@ void hashTabe()
 }
 void threadTest()
 {
-    StockMarket market;
-    Order req(Order::Type::BUY, 950, 100);
-    Order order(Order::Type::BUY, 900, 90);
-
+    StockMarker market;
+    Request req;
+    Order order;
     const int numReq = 1000;
 
     std::thread thread([&]() {
@@ -100,31 +98,35 @@ void threadTest()
     thread.join();
 }
 
-void main()
+void simple_test()
 {
-    StockMarket market;
-
-    market.addRequestSafe(Registration(10));
-    market.addRequestSafe(Registration(12));
-
-    market.addRequestSafe(Order(Order::Type::BUY, 1000, 10));
-    market.addRequestSafe(Order(Order::Type::SELL, 1001, 12));
-    market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-
-
-    market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
-
-    auto order = Order(Order::Type::BUY, 100, 12);
-    market.addRequestSafe(order);
-    market.addRequestSafe(CancelOrder(order));
-
-    for (int i = 0; i < 10000; i++)
-        market.processFirstRequestSafe();
+	StockMarker burse;
+	for (int i = 0; i < 50; ++i)
+	{
+		burse.addRequestSafe(NewUserRequest(115 * i));
+	}
+	for (int i = 0; i < 50; ++i)
+	{
+		burse.addRequestSafe(Order(Order::OrderType::BuyRequest, 250 - rand() % 100, 0, 115 * i));
+	}
+	for (int i = 0; i < 50; ++i)
+	{
+		burse.addRequestSafe(Order(Order::OrderType::SaleRequest, 200 - rand() % 100, 0, 115 * i));
+	}
+	for (int i = 0; i < 150; ++i)
+	{
+		burse.processFirstRequestSafe();
+		if (i == 99)
+		{
+			std::cout << ' ';
+		}
+	}
+	getchar();
 }
+
+int  main()
+{
+	simple_test();
+    return 0;
+}
+
