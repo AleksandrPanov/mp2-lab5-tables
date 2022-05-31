@@ -99,32 +99,69 @@ void threadTest()
     }
     thread.join();
 }
+void myTests()
+{
+    SortTable<int, int> tbl;
+    tbl.insert(10, 15);
+    tbl.insert(6, 64);
+    tbl.insert(50, 5);
+    tbl.insert(7, 96);
+    tbl.insert(0, 1);
+    cout << endl;
+    tbl.print();
+    cout << endl;
+    cout << "Data with min key: " << *(tbl.getMin()) << endl;
+    cout << "Data with max key: " << *(tbl.getMax()) << endl;
+    cout << "Find elem (7,96): key = 7, data = " << *(tbl.find(7)) << endl;
+    cout << "Delete elem (7,96)." << endl;
+    tbl.remove(7);
+    tbl.print();
+
+    //HashTable<int, int> tbl2;
+    //tbl2.insert(10, 15);
+    //tbl2.insert(6, 64);
+    //tbl2.insert(50, 5);
+    //tbl2.insert(7, 96);
+    //tbl2.insert(0, 1);
+    //cout << endl;
+    ////tbl.print();
+    //cout << endl;
+    //cout << "Data with min key: " << *(tbl.getMin()) << endl;
+    //cout << "Data with max key: " << *(tbl.getMax()) << endl;
+    //cout << "Find elem (7,96): key = 7, data = " << *(tbl.find(7)) << endl;
+    //cout << "Delete elem (7,96)." << endl;
+    //tbl2.remove(7);
+    ////tbl.print();
+
+}
 
 void main()
 {
-    StockMarket market;
+    //StockMarket market;
 
-    market.addRequestSafe(Registration(10));
-    market.addRequestSafe(Registration(12));
+    //market.addRequestSafe(Registration(10));
+    //market.addRequestSafe(Registration(12));
 
-    market.addRequestSafe(Order(Order::Type::BUY, 1000, 10));
-    market.addRequestSafe(Order(Order::Type::SELL, 1001, 12));
-    market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1000, 10));
+    //market.addRequestSafe(Order(Order::Type::SELL, 1001, 12));
+    //market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
 
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
 
 
-    market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
+    //market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
 
-    auto order = Order(Order::Type::BUY, 100, 12);
-    market.addRequestSafe(order);
-    market.addRequestSafe(CancelOrder(order));
+    //auto order = Order(Order::Type::BUY, 100, 12);
+    //market.addRequestSafe(order);
+    //market.addRequestSafe(CancelOrder(order));
 
-    for (int i = 0; i < 10000; i++)
-        market.processFirstRequestSafe();
+    //for (int i = 0; i < 10000; i++)
+    //    market.processFirstRequestSafe();
+
+    myTests();
 }
