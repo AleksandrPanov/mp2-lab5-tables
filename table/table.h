@@ -3,6 +3,7 @@
 #include <chrono>
 #include <algorithm>
 #include <list>
+#include <functional>
 
 namespace {
 
@@ -161,6 +162,13 @@ public:
     {
         return *(find(key));
     }
+    void print()
+    {
+        for (int i = 0; i < keyData.size(); i++)
+        {
+            cout << "(" << keyData[i].first << "," << keyData[i].second << ") ";
+        }
+    }
 };
 
 template<typename KeyType, typename ValueType> 
@@ -220,6 +228,18 @@ public:
     {
         return *(find(key));
     }
+
+    virtual OwnIterator<KeyType, ValueType> getMin()
+    {
+        return begin();
+    }
+    virtual OwnIterator<KeyType, ValueType> getMax()
+    {
+        if (keyData.size() == 0ull)
+            return OwnIterator<KeyType, ValueType>();
+        return &(keyData.back());
+    }
+
     void print()
     {
         for (int i = 0; i < keyData.size(); i++)
@@ -230,46 +250,45 @@ public:
 };
 
 template<typename KeyType, typename ValueType>
-class HashTable : public BaseTable<KeyType, ValueType> // заменить в ноде value на pair и везде потом подправить
+class HashTable  // заменить в ноде value на pair и везде потом подправить
 {
 private:
-    static const int default_size = 100;
+    static const int default_size = 128; // степень двойки
     struct Node
     {
         std::pair<KeyType, ValueType> pair;
         bool state; // state = true - элемент добавлен; state = false - элемент удален
         Node() { state = true; pair = std::pair<KeyType, ValueType>(); }
-        Node(const pair<KeyType, ValueType>& p) : state(true), pair(p) {}
+        Node(const std::pair<KeyType, ValueType>& p) : state(true), pair(p) {}
         Node(const KeyType& key_, const ValueType& value_)
         {
             pair.first = key_;
             pair.second = value_;
             state = true;
         }
+        KeyType getKey() { return pair.first; }
+        ValueType getValue() { return pair.second; }
+
     };
     std::vector<Node*> arr;
     int size; // количество значащих элементов в массиве без учета deleted
     int buffer_size; // размер массива
     int size_all_non_nullptr; // количество элементов в массиве с учетом deleted
 
-    struct HashFunction1
+    size_t HashFunction1(const KeyType& key)
     {
-        size_t operator()(const ValueType& v) const
-        {
-            return HashFunctionHorner(v, buffer_size - 1); // ключи должны быть взаимопросты, используем числа <размер таблицы> плюс и минус один.
-        }
+            return HashFunction(key, static_cast<size_t>(buffer_size - 1)); // ключи должны быть взаимопросты, используем числа <размер таблицы> плюс и минус один.
     };
-    struct HashFunction2
+    size_t HashFunction2(const KeyType& key)
     {
-        size_t operator()(const ValueType& v) const
-        {
-            return HashFunctionHorner(v, buffer_size + 1);
-        }
+            size_t hash_result = HashFunction(key, static_cast<size_t>(buffer_size + 1));
+            return (2*hash_result+1); // нечетное значение => взаимнопростое по отношению к размеру таблицы (степень двойки)
     };
 
-    size_t HashFunction(const ValueType& v, const size_t key)
+    size_t HashFunction(const KeyType& key, const size_t prime)
     {
-        size_t hash_result = std::hash(v + static_cast<ValueType>(key)) + key % (size_t)buffer_size;
+        std::hash<KeyType> hash;
+        size_t hash_result = (hash(key + static_cast<KeyType>(prime)) + prime) % static_cast<size_t>(buffer_size);
         return hash_result;
     }
 
@@ -279,14 +298,15 @@ public:
         buffer_size = default_size;
         size = 0;
         size_all_non_nullptr = 0;
-        arr.insert(arr.begin(), nullptr, buffer_size);
+        for (int i = 0; i < buffer_size; i++)
+            arr.push_back(nullptr);             // инициализация массива указателей значениями nullptr
     }
     ~HashTable() {}
 
-    void resize(size_t k = 2) // k - коэффициент увеличение размера таблицы
+    void resize(size_t k = 1) // k - коэффициент увеличение размера таблицы
     {
         int old_buffer_size = buffer_size;
-        buffer_size *= k;
+        buffer_size *= 2*k;
         size_all_non_nullptr = 0;
         size = 0;
 
@@ -295,14 +315,15 @@ public:
         {
             if (arr[i])
             {
-                if (arr[i]->state)
-                    add(arr[i]->value); // добавляем элементы в новый массив
+                Node& currNode = *arr[i];
+                if (currNode.state)
+                    insert(currNode.getKey(), currNode.getValue()); // добавляем элементы в новый массив
                 delete arr[i]; // освобождаем память элемента в старом массиве
             }
         }
         // move new_arr into arr
         arr.clear();
-        arr.move(new_arr);
+        arr = move(new_arr);
     }
 
     void rehash()
@@ -315,78 +336,69 @@ public:
         {
             if (arr[i])
             {
-                if (arr[i]->state)
-                    add(arr[i]->value); // добавляем элементы в новый массив
+                Node& currNode = *arr[i];
+                if (currNode.state)
+                    insert(currNode.getKey(), currNode.getValue()); // добавляем элементы в новый массив
                 delete arr[i]; // освобождаем память элемента в старом массиве
             }
         }
         // move new_arr into arr
         arr.clear();
-        arr.move(new_arr);
+        arr = move(new_arr);
     }
 
-    bool find(const ValueType& key)
+    bool find(const KeyType& key)
     {
-        HashFunction1 hash1;
-        HashFunction2 hash2;
-        int h1 = hash1(value); // значение, отвечающее за начальную позицию
-        int h2 = hash2(value); // значение, ответственное за "шаг" по таблице
+        size_t h1 = HashFunction1(key); // значение, отвечающее за начальную позицию
+        size_t h2 = HashFunction2(key); // значение, ответственное за "шаг" по таблице
         int i = 0;
         while (arr[h1] != nullptr && i < buffer_size)
         {
-            if (arr[h1]->value == value && arr[h1]->state)
+            Node& currNode = *arr[h1];
+            if (currNode.getKey() == key && currNode.state)
                 return true; // такой элемент есть (!!!)
             h1 = (h1 + h2) % buffer_size;
             ++i;
         }
         return false;
     }
-    bool add(const ValueType& value)
+    bool insert(const KeyType& key, const ValueType& value)
     {
-        if (size + 1 > int(0.75 * buffer_size))
+        if (size_all_non_nullptr + 1 > int(0.75 * buffer_size)) // 0,75 - процент заполенности таблицы
             resize();
-        else if (size_all_non_nullptr > 2 * size)
+        else if (size_all_non_nullptr > 2 * size) // если удаленных+значащих элементов в 2 раза больше значащих
             rehash();
-        HashFunction1 hash1;
-        HashFunction2 hash2;
-        int h1 = hash1(value);
-        int h2 = hash2(value);
+        int h1 = HashFunction1(key);
+        int h2 = HashFunction2(key);
         int i = 0;
         int first_deleted = -1; // запоминаем первый подходящий (удаленный) элемент
         while (arr[h1] != nullptr && i < buffer_size)
         {
-            if (arr[h1]->value == value && arr[h1]->state)
-                return false; // такой элемент уже есть, а значит его нельзя вставлять повторно
-            if (!arr[h1]->state && first_deleted == -1) // находим место для нового элемента
-                first_deleted = h1;
-            h1 = (h1 + h2) % buffer_size;
-            ++i;
+
         }
         if (first_deleted == -1) // если не нашлось подходящего места, создаем новый Node
         {
-            arr[h1] = new Node(value);
+            arr[h1] = new Node(key, value);
             ++size_all_non_nullptr; // так как мы заполнили один пробел, не забываем записать, что это место теперь занято
         }
         else
         {
-            arr[first_deleted]->value = value;
-            arr[first_deleted]->state = true;
+            *arr[first_deleted]  = Node(key, value);
         }
         ++size; // и в любом случае мы увеличили количество элементов
         return true;
     }
-    bool remove(const KeyType& value)
+    bool remove(const KeyType& key)
     {
-        HashFunction1 hash1;
-        HashFunction2 hash2;
-        int h1 = hash1(value); // значение, отвечающее за начальную позицию
-        int h2 = hash2(value); // значение, ответственное за "шаг" по таблице
+        int h1 = HashFunction1(key); // значение, отвечающее за начальную позицию
+        int h2 = HashFunction2(key); // значение, ответственное за "шаг" по таблице
         int i = 0;
         while (arr[h1] != nullptr && i < buffer_size)
         {
-            if (arr[h1]->value == value && arr[h1]->state)
+            Node& currNode = *arr[h1];
+            if (currNode.getKey() == key && currNode.state)
             {
-                arr[h1]->state = false;
+                currNode.state = false;
                 --size;
                 return true;
             }
@@ -395,20 +407,153 @@ public:
         }
         return false;
     }
-    virtual ValueType& operator[](const KeyType& key) override
-    {
 
+    void print()
+    {
+        for (int i = 0; i < arr.size(); i++)
+        {
+            if (arr[i])
+            {
+                Node& currNode = *arr[i];
+                if (currNode.state)
+                    cout << "(" << currNode.getKey() << "," << currNode.getValue() << ") ";
+            }
+        }
+    }
+    
+    bool change(const KeyType& key, const ValueType& value) // ключ, новое значение
+    {
+        size_t h1 = HashFunction1(key); // значение, отвечающее за начальную позицию
+        size_t h2 = HashFunction2(key); // значение, ответственное за "шаг" по таблице
+        int i = 0;
+        while (arr[h1] != nullptr && i < buffer_size)
+        {
+            Node& currNode = *arr[h1];
+            if (currNode.getKey() == key && currNode.state)
+            {
+                currNode.pair.second = value;
+                return true; // элемент изменен
+            }
+            h1 = (h1 + h2) % buffer_size;
+            ++i;
+        }
+        return false; // элемент не найден
     }
 
-    virtual OwnIterator<KeyType, ValueType> find(const KeyType& key)
+    int getSize()
     {
-        return OwnIterator<KeyType, ValueType>();
+        return size;
     }
-    virtual OwnIterator<KeyType, ValueType> insert(const KeyType& key, const ValueType& value)
+
+    std::pair<KeyType, ValueType> begin()
     {
-        return OwnIterator<KeyType, ValueType>();
+        for (int i = 0; i < arr.size(); i++)
+        {
+            if (arr[i])
+            {
+                Node& currNode = *arr[i];
+                if (currNode.state)
+                    return currNode.pair;
+            }
+        }
+        return std::pair<KeyType, ValueType>();
     }
-    virtual void remove(const KeyType& key) {}
+
+    std::pair<KeyType, ValueType> end()
+    {
+        for (int i = arr.size() - 1; i >= 0; i--)
+        {
+            if (arr[i])
+            {
+                Node& currNode = *arr[i];
+                if (currNode.state)
+                    cout << currNode.pair;
+            }
+        }
+    }
+
+    std::pair<KeyType, ValueType>& operator[](const KeyType& key)
+    {
+        size_t h1 = HashFunction1(key); // значение, отвечающее за начальную позицию
+        size_t h2 = HashFunction2(key); // значение, ответственное за "шаг" по таблице
+        int i = 0;
+        while (arr[h1] != nullptr && i < buffer_size)
+        {
+            Node& currNode = *arr[h1];
+            if (currNode.getKey() == key && currNode.state)
+                return currNode.pair; // такой элемент есть (!!!)
+            h1 = (h1 + h2) % buffer_size;
+            ++i;
+        }
+        return std::pair<KeyType, ValueType>();
+    }
+
+    ValueType getData(const KeyType& key)
+    {
+        size_t h1 = HashFunction1(key); // значение, отвечающее за начальную позицию
+        size_t h2 = HashFunction2(key); // значение, ответственное за "шаг" по таблице
+        int i = 0;
+        while (arr[h1] != nullptr && i < buffer_size)
+        {
+            Node& currNode = *arr[h1];
+            if (currNode.getKey() == key && currNode.state)
+                return currNode.pair.second; // такой элемент есть (!!!)
+            h1 = (h1 + h2) % buffer_size;
+            ++i;
+        }
+        return ValueType();
+    }
+
+    KeyType getMin()
+    {
+        if (size == 0) return KeyType();
+
+        KeyType min;
+        bool firstEl = true; // true - первый значащий элемент не найден, false - первый значащий элемент уже найден
+        for (int i = 0; i < arr.size(); i++)
+        {
+            if (arr[i])
+            {
+                Node& currNode = *arr[i];
+                if (currNode.state)
+                    if (firstEl)
+                    {
+                        min = currNode.pair.first;
+                        firstEl = false;
+                    }
+                    else if (min > currNode.pair.first)
+                        min = currNode.pair.first;
+
+            }
+        }
+        return min;
+    }
+
+    KeyType getMax()
+    {
+        if (size == 0) return KeyType();
+
+        KeyType max;
+        bool firstEl = true; // true - первый значащий элемент не найден, false - первый значащий элемент уже найден
+        for (int i = 0; i < arr.size(); i++)
+        {
+            if (arr[i])
+            {
+                Node& currNode = *arr[i];
+                if (currNode.state)
+                    if (firstEl)
+                    {
+                        max = currNode.pair.first;
+                        firstEl = false;
+                    }
+                    else if (max < currNode.pair.first)
+                        max = currNode.pair.first;
+
+            }
+        }
+        return max;
+    }
+
 };
 
 }

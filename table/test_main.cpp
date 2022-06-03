@@ -117,21 +117,28 @@ void myTests()
     tbl.remove(7);
     tbl.print();
 
-    //HashTable<int, int> tbl2;
-    //tbl2.insert(10, 15);
-    //tbl2.insert(6, 64);
-    //tbl2.insert(50, 5);
-    //tbl2.insert(7, 96);
-    //tbl2.insert(0, 1);
-    //cout << endl;
-    ////tbl.print();
-    //cout << endl;
-    //cout << "Data with min key: " << *(tbl.getMin()) << endl;
-    //cout << "Data with max key: " << *(tbl.getMax()) << endl;
-    //cout << "Find elem (7,96): key = 7, data = " << *(tbl.find(7)) << endl;
-    //cout << "Delete elem (7,96)." << endl;
-    //tbl2.remove(7);
-    ////tbl.print();
+    HashTable<int, int> tbl2;
+    tbl2.insert(10, 15);
+    tbl2.insert(6, 64);
+    tbl2.insert(50, 5);
+    tbl2.insert(7, 96);
+    tbl2.insert(0, 1);
+    cout << endl;
+    cout << endl;
+    tbl2.print();
+    cout << endl;
+    cout << "Data with min key: " << "("<< tbl2.getMin()<<","<<tbl2.getData(tbl2.getMin())<<")" << endl;
+    cout << "Data with max key: " << "(" << tbl2.getMax() << "," << tbl2.getData(tbl2.getMax()) << ")" << endl;
+    cout << "Data with key = 50: " << tbl2.getData(50) << endl;
+    cout << "Found Elem (7,96)? " << tbl2.find(7) << endl;
+    cout << "Delete elem (7,96)." << endl;
+    tbl2.remove(7);
+    tbl2.print();
+    std::pair<int, int> p = tbl2.begin();
+    cout << endl << p.first<<" "<<p.second;
+    cout << endl;
+
+
 
 }
 
