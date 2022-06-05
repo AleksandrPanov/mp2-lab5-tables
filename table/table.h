@@ -49,6 +49,7 @@ public:
     }
     typename OwnIterator::reference operator*() const
     {
+        //if (!(this->p)) return ValueType();
         return p->second;
     }
     virtual OwnIterator& operator++()
@@ -64,6 +65,29 @@ public:
 private:
     std::pair<KeyType, ValueType>* p = nullptr;
 };
+
+//template<typename KeyType, typename ValueType>
+//class HashTableIterator : public OwnIterator<KeyType, ValueType>
+//{
+//private:
+//
+//    HashTableIterator() {}
+//    HashTableIterator(std::pair<KeyType, ValueType>* ptr) : OwnIterator<KeyType, ValueType>(ptr) {}
+//public:
+//
+//    virtual OwnIterator& operator++()
+//    {
+//        ++p;
+//        return *this;
+//    }
+//    virtual OwnIterator& operator+(int index)
+//    {
+//        p += index;
+//        return *this;
+//    }
+//
+//
+//};
 
 template<typename KeyType, typename ValueType>
 class BaseTable
@@ -250,7 +274,7 @@ public:
 };
 
 template<typename KeyType, typename ValueType>
-class HashTable  // заменить в ноде value на pair и везде потом подправить
+class HashTable  
 {
 private:
     static const int default_size = 128; // степень двойки
@@ -301,7 +325,11 @@ public:
         for (int i = 0; i < buffer_size; i++)
             arr.push_back(nullptr);             // инициализация массива указателей значениями nullptr
     }
-    ~HashTable() {}
+    ~HashTable() 
+    {
+        for (int i = 0; i < buffer_size; i++)
+            delete arr[i];
+    }
 
     void resize(size_t k = 1) // k - коэффициент увеличение размера таблицы
     {
@@ -554,6 +582,210 @@ public:
         return max;
     }
 
+};
+
+template<typename KeyType, typename ValueType>
+class AVLTable
+{
+private:
+    enum Balance { LeftHeavy = -1, Balanced, RightHeavy};
+    struct Node
+    {
+        std::pair<KeyType, ValueType> pair;
+        Balance balance;                   // разность между высотой левого и правого поддерева данной вершины (hr - hl). 
+        Node* left;
+        Node* right;
+        Node() { pair = std::pair<KeyType, ValueType>(); balance = Balance::Balanced; left = nullptr; right = nullptr; }
+        Node(const KeyType& key, const ValueType& value)
+        { 
+            pair = std::pair<KeyType, ValueType>(key,value); balance = Balance::Balanced; left = nullptr; right = nullptr;
+        }
+        ~Node() { delete left; delete right; }
+    };
+
+    Node* root;
+
+public:
+    AVLTable() : root(nullptr) {}
+    AVLTable(const KeyType& key, const ValueType& value) { root = new Node(key, value); }
+
+    ~AVLTable() { delete root; }
+
+    bool insert(const KeyType& key, const ValueType& value)
+    {
+        if (!root)
+        {
+            root = new Node(key, value);
+            return true;
+        }
+        else
+        {
+            bool checkInsert = false;                   // проверка успешности вставки
+            addRecursive(root, nullptr, key, value, checkInsert);
+            return checkInsert;
+        }
+    }
+
+private:
+    bool addRecursive(Node* parent, Node* grandParent, const KeyType& key, const ValueType& value, bool& checkInsert)
+    {
+        bool grew;                                        // логическая переменная, означающая выросло ли поддерево после выставки в него элемента
+        if (key == parent->pair.first)                    // ключи равны
+        {
+            parent->pair.second = value;
+            checkInsert = true;
+            return false;
+        }
+        else if (key < parent->pair.first)                // ключ меньше
+        {
+            if (!parent->left) // если левого элемента нет (nullptr) => вставка
+            {
+                parent->left = new Node(key, value);
+                checkInsert = true;
+                grew = true;
+            } else
+                grew = addRecursive(parent->left, parent, key, value, checkInsert);
+
+            if (!grew)
+                return false;
+            else
+            {
+                if (parent->balance == Balance::RightHeavy)
+                {
+                    parent->balance = Balance::Balanced; // правое дерево было выше на 1, но и левое дерево выросло на 1 => поддерево сбалансировано 
+                    return false; 
+                }
+                else if (parent->balance == Balance::Balanced)
+                {
+                    parent->balance = Balance::LeftHeavy; // левое дерево выросло, но дерево ещё является сбалансированным
+                    return true;
+                }
+                else // if (parent->balance == Balance::LeftHeavy)
+                {
+                    rebalanceLeftSubtree(parent, grandParent);         // левое дерево выше правого на 2, нужна перебалансировка
+                    return false;
+                }
+            }
+        }
+        else                                              // ключ больше
+        {
+            if (!parent->right) // если правого элемента нет (nullptr)
+            {
+                parent->right = new Node(key, value);
+                checkInsert = true;
+                grew = true;
+            } else
+                grew = addRecursive(parent->right, parent, key, value, checkInsert);
+
+            if (!grew)
+                return false;
+            else
+            {
+                if (parent->balance == Balance::LeftHeavy)
+                {
+                    parent->balance = Balance::Balanced;    // левое дерево было выше на 1, но и правое дерево выросло на 1 => поддерево сбалансировано 
+                    return false;
+                }
+                else if (parent->balance == Balance::Balanced)
+                {
+                    parent->balance = Balance::RightHeavy; // правое дерево выросло, но дерево ещё является сбалансированным
+                    return true;
+                }
+                else // if (parent->balance == Balance::RightHeavy)
+                {
+                    rebalanceRightSubtree(parent, grandParent);          // правое дерево выше левого на 2, нужна перебалансировка
+                    return false;
+                }
+            }
+        }
+    }
+
+    void rebalanceLeftSubtree(Node* parent, Node* grandParent)
+    {
+        Node* child = parent->left;
+        if (child->balance == Balance::LeftHeavy)      // требуется малое правое вращение
+        {
+            parent->left = child->right;
+            child->right = parent;
+            parent->balance = Balance::Balanced;
+            child->balance = Balance::Balanced;
+            // замена parent на child
+            if (!grandParent)                       // если grandParent == nullptr, то root == parent
+                root = child;
+            else if (grandParent->right && grandParent->right == parent)
+                grandParent->right = child;
+            else grandParent->left = child;
+        }
+        else if (child->balance == Balance::RightHeavy)  // требуется врещение влево-вправо
+        {
+            Node* grandChild = child->right;
+            child->right = grandChild->left;
+            grandChild->left = child;
+            parent->left = grandChild->right;
+            grandChild->right = parent;
+            if (grandChild->balance == Balance::LeftHeavy)
+                parent->balance = Balance::RightHeavy;
+            else
+                parent->balance = Balance::Balanced;
+            if (grandChild->balance == Balance::RightHeavy)
+                child->balance = Balance::LeftHeavy;
+            else
+                child->balance = Balance::Balanced;
+            grandChild->balance = Balance::Balanced;
+            // замена parent на grandChild
+            if (!grandParent)                       // если grandParent == nullptr, то root == parent
+                root = grandChild;
+            else if (grandParent->right && grandParent->right == parent)
+                grandParent->right = grandChild;
+            else grandParent->left = grandChild;
+        }
+    }
+
+    void rebalanceRightSubtree(Node* parent, Node* grandParent)
+    {
+        Node* child = parent->right;
+        if (child->balance == Balance::RightHeavy)      // требуется малое левое вращение
+        {
+            parent->right = child->left;
+            child->left = parent;
+            parent->balance = Balance::Balanced;
+            child->balance = Balance::Balanced;
+            // замена parent на child
+            if (!grandParent)                           // если grandParent == nullptr, то root == parent
+                root = child;
+            else if (grandParent->right && grandParent->right == parent)
+                grandParent->right = child;
+            else grandParent->left = child;
+        }
+        else if (child->balance == Balance::LeftHeavy)  // требуется врещение вправо-влево
+        {
+            Node* grandChild = child->left;
+            child->left = grandChild->right;
+            grandChild->right = child;
+            parent->right = grandChild->left;
+            grandChild->left = parent;
+            if (grandChild->balance == Balance::RightHeavy)
+                parent->balance = Balance::LeftHeavy;
+            else 
+                parent->balance = Balance::Balanced;
+            if (grandChild->balance == Balance::LeftHeavy)
+                child->balance = Balance::RightHeavy;
+            else
+                child->balance = Balance::Balanced;
+            grandChild->balance = Balance::Balanced;
+            // замена parent на grandChild
+            if (!grandParent)                       // если grandParent == nullptr, то root == parent
+                root = grandChild;
+            else if (grandParent->right && grandParent->right == parent)
+                grandParent->right = grandChild;
+            else grandParent->left = grandChild;
+        }
+    }
+
+    bool remove()
+    {
+
+    }
 };
 
 }

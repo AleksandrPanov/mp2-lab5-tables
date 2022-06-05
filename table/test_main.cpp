@@ -138,7 +138,21 @@ void myTests()
     cout << endl << p.first<<" "<<p.second;
     cout << endl;
 
-
+    AVLTable<int, float> tbl3;
+    //tbl3.insert(4, 0.4);
+    //tbl3.insert(5, 0.5);
+    //cout<<endl<<"Uspeh? "<<tbl3.insert(7, 0.7);
+    //tbl3.insert(2, 0.2);
+    //tbl3.insert(1, 0.1);
+    //tbl3.insert(3, 0.3);
+    //tbl3.insert(6, 0.6);
+    for (int i = 0; i < 12; i++)
+    {
+        int a;
+        cin >> a;
+        tbl3.insert(a, 0.0);
+    }
+    tbl3.insert(78, 0.0);
 
 }
 
