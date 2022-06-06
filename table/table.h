@@ -66,29 +66,6 @@ private:
     std::pair<KeyType, ValueType>* p = nullptr;
 };
 
-//template<typename KeyType, typename ValueType>
-//class HashTableIterator : public OwnIterator<KeyType, ValueType>
-//{
-//private:
-//
-//    HashTableIterator() {}
-//    HashTableIterator(std::pair<KeyType, ValueType>* ptr) : OwnIterator<KeyType, ValueType>(ptr) {}
-//public:
-//
-//    virtual OwnIterator& operator++()
-//    {
-//        ++p;
-//        return *this;
-//    }
-//    virtual OwnIterator& operator+(int index)
-//    {
-//        p += index;
-//        return *this;
-//    }
-//
-//
-//};
-
 template<typename KeyType, typename ValueType>
 class BaseTable
 {
@@ -604,10 +581,11 @@ private:
     };
 
     Node* root;
+    int size;
 
 public:
-    AVLTable() : root(nullptr) {}
-    AVLTable(const KeyType& key, const ValueType& value) { root = new Node(key, value); }
+    AVLTable() : root(nullptr), size(0) {}
+    AVLTable(const KeyType& key, const ValueType& value) { root = new Node(key, value); size = 1; }
 
     ~AVLTable() { delete root; }
 
@@ -616,16 +594,63 @@ public:
         if (!root)
         {
             root = new Node(key, value);
+            size++;
             return true;
         }
         else
         {
             bool checkInsert = false;                   // проверка успешности вставки
             addRecursive(root, nullptr, key, value, checkInsert);
+            if (checkInsert)
+                size++;
             return checkInsert;
         }
     }
 
+    bool remove(const KeyType& key)
+    {
+        if (!root)                                      // проверка, есть ли элементы?
+        {
+            return false;
+        }
+        else
+        {
+            bool checkRemove = false;                   // проверка успешности удалени€
+            removeRecursive(root, nullptr, key, checkRemove);
+            if (checkRemove)
+                size--;
+            return checkRemove;
+        }
+    }
+
+    bool find(const KeyType& key)
+    {
+        if (!root)                                      // проверка, есть ли элементы?
+        {
+            return false;
+        }
+        else
+        {
+            return findRecursive(root, key);
+        }
+    }
+
+    ValueType getData(const KeyType& key)
+    {
+        if (!root)                                      // проверка, есть ли элементы?
+        {
+            return ValueType();
+        }
+        else
+        {
+            return getDataRecursive(root, key);
+        }
+    }
+
+    int getSize() 
+    {
+        return size;
+    }
 private:
     bool addRecursive(Node* parent, Node* grandParent, const KeyType& key, const ValueType& value, bool& checkInsert)
     {
@@ -782,9 +807,321 @@ private:
         }
     }
 
-    bool remove()
+    bool removeRecursive(Node* parent, Node* grandParent, const KeyType& key, bool& checkRemove)
     {
+        bool shrunk;            // переменна€ shrunk означает, сократилась ли длина поддерева после удалени€
+        if (key < parent->pair.first)
+        {
+            if (!parent->left) // если левого элемента нет (nullptr) => удаление не удалось
+            {
+                checkRemove = false;
+                return false; 
+            }
+            else 
+                shrunk = removeRecursive(parent->left, parent, key, checkRemove);
 
+            if (shrunk)
+                return rebalanceLeftShrunk(parent, grandParent); 
+            else
+                return false;
+
+        }
+        else if (key > parent->pair.first)
+        {
+            if (!parent->right)
+            {
+                checkRemove = false;
+                return false;
+            }
+            else
+                shrunk = removeRecursive(parent->right, parent, key, checkRemove);
+
+            if (shrunk)
+                return rebalanceRightShrunk(parent, grandParent);
+            else
+                return false;
+        }
+        else // if (key == parent->pair.first)
+        {
+            // найден элемент дл€ удалаени€
+            if (!parent->right && parent->left) // у parent есть только левый потомок
+            {
+                // замена parent на его левого потомка
+                if (!grandParent) // если grandParent == nullptr, то parent == root
+                    root = parent->left;
+                else if (grandParent->right && grandParent->right == parent)
+                    grandParent->right = parent->left;
+                else grandParent->left = parent->left;
+                shrunk = true;
+            }
+            else if (!parent->left && parent->right) // у parent есть только правый потомок
+            {
+                // замена parent на его правого потомка
+                if (!grandParent) // если grandParent == nullptr, то parent == root
+                    root = parent->right;
+                else if (grandParent->right && grandParent->right == parent)
+                    grandParent->right = parent->right;
+                else grandParent->left = parent->right;
+                shrunk = true;
+            }
+            else if (parent->left && parent->right) // есть и левый и правый узлы
+            {
+                Node* newParent;
+                shrunk = replaceRightmost(grandParent, parent, parent, parent->left, &newParent);
+                if (shrunk)
+                    shrunk = rebalanceLeftShrunk(newParent, grandParent);
+            }
+            else // нет обоих потомков
+            {
+                if (!grandParent) // если grandParent == nullptr, то parent == root
+                    root = nullptr;
+                else if (grandParent->right && grandParent->right == parent)
+                    grandParent->right = nullptr;
+                else grandParent->left = nullptr;
+                shrunk = true;
+            }
+            parent->left = nullptr;
+            parent->right = nullptr;
+            delete parent;
+            checkRemove = true;
+            return shrunk;
+        }
+    }
+
+    bool rebalanceLeftShrunk(Node* parent, Node* grandParent)
+    {
+        bool shrunk = false;
+        Node* child;
+        Node* grandChild;
+        Balance child_bal, grandChild_bal;
+        if (parent->balance == Balance::LeftHeavy)
+        {
+            parent->balance = Balance::Balanced;
+            return true;
+        }
+        else if (parent->balance == Balance::Balanced)
+        {
+            parent->balance = Balance::RightHeavy;
+            return false;
+        }
+        else
+        {
+            child = parent->right;
+            child_bal = child->balance;
+            if (child->balance != Balance::LeftHeavy)
+            {
+                // ¬ращение влево
+                parent->right = child->left;
+                child->left = parent;
+                if (child->balance == Balance::Balanced)
+                {
+                    parent->balance = Balance::RightHeavy;
+                    child->balance = Balance::LeftHeavy;
+                    shrunk = false;
+                }
+                else
+                {
+                    parent->balance = Balance::Balanced;
+                    child->balance = Balance::Balanced;
+                    shrunk = true;
+                }
+                if (!grandParent)                           // если grandParent == nullptr, то root == parent
+                    root = child;
+                else if (grandParent->right && grandParent->right == parent)
+                    grandParent->right = child;
+                else grandParent->left = child;
+                return shrunk;
+            }
+            else
+            {
+                // вращение влево-вправо
+                grandChild = child->left;
+                grandChild_bal = grandChild->balance;
+                child->left = grandChild->right;
+                grandChild->right = child;
+                parent->right = grandChild->left;
+                grandChild->left = parent;
+
+                if (grandChild_bal == Balance::RightHeavy)
+                    parent->balance = Balance::LeftHeavy;
+                else
+                    parent->balance = Balance::Balanced;
+                if (grandChild_bal == Balance::LeftHeavy)
+                    child->balance = Balance::RightHeavy;
+                else
+                    child->balance = Balance::Balanced;
+                grandChild->balance = Balance::Balanced;
+                if (!grandParent)                           // если grandParent == nullptr, то root == parent
+                    root = grandChild;
+                else if (grandParent->right && grandParent->right == parent)
+                    grandParent->right = grandChild;
+                else grandParent->left = grandChild;
+                return false;
+            }
+        }
+    }
+
+    bool rebalanceRightShrunk(Node* parent, Node* grandParent) // primary
+    {
+        bool shrunk = false;
+        Node *child, *grandChild;
+        Balance child_bal, grandChild_bal;
+        if (parent->balance == Balance::RightHeavy)
+        {
+            parent->balance = Balance::Balanced;
+            return true;
+        }
+        else if (parent->balance == Balance::Balanced)
+        {
+            parent->balance = Balance::LeftHeavy;
+            return false;
+        }
+        else
+        {
+            child = parent->left;
+            child_bal = child->balance;
+            if (child->balance != Balance::RightHeavy)
+            {
+                // ¬ращение вправо
+                parent->left = child->right;
+                child->right = parent;
+                if (child->balance == Balance::Balanced)
+                {
+                    parent->balance = Balance::LeftHeavy;
+                    child->balance = Balance::RightHeavy;
+                    shrunk = false;
+                }
+                else
+                {
+                    parent->balance = Balance::Balanced;
+                    child->balance = Balance::Balanced;
+                    shrunk = true;
+                }
+                if (!grandParent)                           // если grandParent == nullptr, то root == parent
+                    root = child;
+                else if (grandParent->right && grandParent->right == parent)
+                    grandParent->right = child;
+                else grandParent->left = child;
+                return shrunk;
+            }
+            else
+            {
+                // вращение влево-вправо
+                grandChild = child->right;
+                grandChild_bal = grandChild->balance;
+                child->right = grandChild->left;
+                grandChild->left = child;
+                parent->left = grandChild->right;
+                grandChild->right = parent;
+
+                if (grandChild_bal == Balance::LeftHeavy)
+                    parent->balance = Balance::RightHeavy;
+                else
+                    parent->balance = Balance::Balanced;
+                if (grandChild_bal == Balance::RightHeavy)
+                    child->balance = Balance::LeftHeavy;
+                else
+                    child->balance = Balance::Balanced;
+                grandChild->balance = Balance::Balanced; 
+                if (!grandParent)                           // если grandParent == nullptr, то root == parent
+                    root = grandChild;
+                else if (grandParent->right && grandParent->right == parent)
+                    grandParent->right = grandChild;
+                else grandParent->left = grandChild;
+                return false;
+            }
+        }
+    }
+
+    bool replaceRightmost(Node* target_parent, Node* target, Node* repl_parent, Node* repl, Node **newParent)
+    {   
+        bool shrunk = false;
+        Node* old_repl;
+        if (!repl->right)
+        {
+            // repl - это узел, которым заменитс€ искомый (target).
+            // «апоминание положени€ узла
+            old_repl = repl;
+            if (repl_parent != target)
+            {   // —лучай, когда в левом поддереве крайний правый элемент не €вл€етс€ дочерним дл€ target.
+                // «амена repl его левым дочерним узлом
+                repl_parent->right = repl->left;
+                // «амена искомого узла переменной old_repl
+                old_repl->left = target->left;
+            }
+            else // случай, когда в левом поддерерве один элемент
+                repl_parent->left = repl->left;
+            // «амена target переменной old_repl
+            old_repl->right = target->right;
+            old_repl->balance = target->balance;
+            if (!target_parent) // если target_parent == nullptr, то target == root
+                root = old_repl;
+            else if (target_parent->right && target_parent->right == target)
+                target_parent->right = old_repl;
+            else target_parent->left = old_repl;
+
+            *newParent = old_repl;
+            return true;
+        }
+        else
+        {
+            // –ассмотрение правых ветвей
+            shrunk = replaceRightmost(target_parent, target, repl,  repl->right, newParent);
+            if (shrunk)
+                return rebalanceRightShrunk(repl, repl_parent);
+        }
+    }
+
+    bool findRecursive(Node* parent, const KeyType& key)
+    {
+        if (key < parent->pair.first)
+        {
+            if (!parent->left) // если левого элемента нет (nullptr) => удаление не удалось
+            {
+                return false;
+            }
+            else
+                return findRecursive(parent->left, key);
+        }
+        else if (key > parent->pair.first)
+        {
+            if (!parent->right)
+            {
+                return false;
+            }
+            else
+                return findRecursive(parent->right, key);
+        }
+        else // if (key == parent->pair.first)
+        {
+            return true;
+        }
+    }
+
+    ValueType getDataRecursive(Node* parent, const KeyType& key)
+    {
+        if (key < parent->pair.first)
+        {
+            if (!parent->left) // если левого элемента нет (nullptr) => удаление не удалось
+            {
+                return ValueType();
+            }
+            else
+                return getDataRecursive(parent->left, key);
+        }
+        else if (key > parent->pair.first)
+        {
+            if (!parent->right)
+            {
+                return ValueType();
+            }
+            else
+                return getDataRecursive(parent->right, key);
+        }
+        else // if (key == parent->pair.first)
+        {
+            return parent->pair.second;
+        }
     }
 };
 
