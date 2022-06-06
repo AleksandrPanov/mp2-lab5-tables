@@ -102,29 +102,28 @@ void threadTest()
 
 void main()
 {
-    StockMarket market;
+    //StockMarket market;
 
-    market.addRequestSafe(Registration(10));
-    market.addRequestSafe(Registration(12));
+    //market.addRequestSafe(Registration(10));
+    //market.addRequestSafe(Registration(12));
+    //
+    //market.addRequestSafe(Order(Order::Type::BUY, 1000, 10));
+    //market.addRequestSafe(Order(Order::Type::SELL, 1001, 12));
+    //market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
 
-    market.addRequestSafe(Order(Order::Type::BUY, 1000, 10));
-    market.addRequestSafe(Order(Order::Type::SELL, 1001, 12));
-    market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
 
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-
-
-    market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
-
-    auto order = Order(Order::Type::BUY, 100, 12);
-    market.addRequestSafe(order);
-    market.addRequestSafe(CancelOrder(order));
-
-    for (int i = 0; i < 10000; i++)
-        market.processFirstRequestSafe();
+    //auto order = Order(Order::Type::BUY, 100, 12);
+    //market.addRequestSafe(order);
+    //market.addRequestSafe(CancelOrder(order));
+    //
+    //for (int i = 0; i < 10000; i++)
+    //    market.processFirstRequestSafe();
 }
