@@ -99,32 +99,136 @@ void threadTest()
     }
     thread.join();
 }
+void myTests()
+{
+    SimpleTable<int, int> tbl0;
+    tbl0.insert(10, 15);
+    tbl0.insert(6, 64);
+    tbl0.insert(50, 5);
+    tbl0.insert(7, 96);
+    tbl0.insert(0, 1);
+    cout << endl;
+    tbl0.print();
+    cout << endl;
+    cout << "Data with min key: " << *(tbl0.getMin()) << endl;
+    cout << "Data with max key: " << *(tbl0.getMax()) << endl;
+    cout << "Find elem (7,96): key = 7, data = " << *(tbl0.find(7)) << endl;
+    cout << "Delete elem (7,96)." << endl;
+    tbl0.remove(7);
+    tbl0.print();
+    cout << endl << endl;
+
+    SortTable<int, int> tbl;
+    tbl.insert(10, 15);
+    tbl.insert(6, 64);
+    tbl.insert(50, 5);
+    tbl.insert(7, 96);
+    tbl.insert(0, 1);
+    cout << endl;
+    tbl.print();
+    cout << endl;
+    cout << "Data with min key: " << *(tbl.getMin()) << endl;
+    cout << "Data with max key: " << *(tbl.getMax()) << endl;
+    cout << "Find elem (7,96): key = 7, data = " << *(tbl.find(7)) << endl;
+    cout << "Delete elem (7,96)." << endl;
+    tbl.remove(7);
+    tbl.print();
+
+    HashTable<int, int> tbl2;
+    tbl2.insert(10, 15);
+    tbl2.insert(6, 64);
+    tbl2.insert(50, 5);
+    tbl2.insert(7, 96);
+    tbl2.insert(0, 1);
+    cout << endl;
+    cout << endl;
+    tbl2.print();
+    cout << endl;
+    cout << "Data with min key: " << "("<< tbl2.getMin()<<","<<tbl2.getData(tbl2.getMin())<<")" << endl;
+    cout << "Data with max key: " << "(" << tbl2.getMax() << "," << tbl2.getData(tbl2.getMax()) << ")" << endl;
+    cout << "Data with key = 50: " << tbl2.getData(50) << endl;
+    cout << "Found Elem (7,96)? " << tbl2.find(7) << endl;
+    cout << "Delete elem (7,96)." << endl;
+    tbl2.remove(7);
+    tbl2.print();
+    std::pair<int, int> p = tbl2.begin();
+    cout << endl << p.first<<" "<<p.second;
+    cout << endl;
+
+    AVLTable<int, float> tbl3;
+    //tbl3.insert(4, 0.4);
+    //tbl3.insert(5, 0.5);
+    //cout<<endl<<"success? "<<tbl3.insert(7, 0.7);
+    //tbl3.insert(2, 0.2);
+    //tbl3.insert(1, 0.1);
+    //tbl3.insert(3, 0.3);
+    //tbl3.insert(6, 0.6);
+    //tbl3.insert(8, 0.8);
+    //tbl3.remove(2);
+    //tbl3.remove(4);
+    //for (int i = 0; i < 12; i++)
+    //{
+    //    int a;
+    //    cin >> a;
+    //    tbl3.insert(a, 0.0);
+    //}
+    //tbl3.insert(78, 0.0);
+
+    tbl3.insert(5, 0.5);
+    tbl3.insert(3, 0.3);
+    tbl3.insert(8, 0.8);
+    tbl3.insert(2, 0.2);
+    tbl3.insert(4, 0.4);
+    tbl3.insert(7, 0.7);
+    tbl3.insert(10, 1.0);
+    tbl3.insert(1, 0.1);
+    tbl3.insert(6, 0.6);
+    tbl3.insert(9, 0.9);
+    tbl3.insert(11, 1.1);
+    cout<<endl << "Find key = 11? " << tbl3.find(11);
+    cout << endl <<"Get data with key = 11: " << tbl3.getData(11);
+    cout << endl << "Size of AVL-tree: " << tbl3.getSize();
+    cout << endl << "... Deleting 7 elements ...";
+
+    tbl3.remove(4);
+    tbl3.remove(8);
+    tbl3.remove(6);
+    tbl3.remove(5);
+    tbl3.remove(2);
+    tbl3.remove(1);
+    tbl3.remove(7);
+    cout << endl << "Size of AVL-tree: " << tbl3.getSize();
+
+
+}
 
 void main()
 {
-    StockMarket market;
+    //StockMarket market;
 
-    market.addRequestSafe(Registration(10));
-    market.addRequestSafe(Registration(12));
+    //market.addRequestSafe(Registration(10));
+    //market.addRequestSafe(Registration(12));
 
-    market.addRequestSafe(Order(Order::Type::BUY, 1000, 10));
-    market.addRequestSafe(Order(Order::Type::SELL, 1001, 12));
-    market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1000, 10));
+    //market.addRequestSafe(Order(Order::Type::SELL, 1001, 12));
+    //market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
 
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    //market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
 
 
-    market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
+    //market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
 
-    auto order = Order(Order::Type::BUY, 100, 12);
-    market.addRequestSafe(order);
-    market.addRequestSafe(CancelOrder(order));
+    //auto order = Order(Order::Type::BUY, 100, 12);
+    //market.addRequestSafe(order);
+    //market.addRequestSafe(CancelOrder(order));
 
-    for (int i = 0; i < 10000; i++)
-        market.processFirstRequestSafe();
+    //for (int i = 0; i < 10000; i++)
+    //    market.processFirstRequestSafe();
+
+    myTests();
 }
