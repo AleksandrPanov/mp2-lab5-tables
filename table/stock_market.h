@@ -13,7 +13,7 @@ static uint64_t getNowTime()
     const auto time = std::chrono::system_clock::now();
     return std::chrono::duration_cast<std::chrono::seconds>(
         time.time_since_epoch()
-    ).count();
+        ).count();
 }
 
 class Request
@@ -38,7 +38,7 @@ protected:
 class Registration : public Request
 {
 public:
-    Registration(int64_t userId) : 
+    Registration(int64_t userId) :
         Request(Request::Type::REGISTRATION),
         userId(userId)
     {   }
