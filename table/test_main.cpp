@@ -1,130 +1,59 @@
-#include <iostream>
-#include <string>
-#include <ctime>
-#include <thread>
-
+п»ї#include <iostream>
 #include "table.h"
-#include "stock_market.h"
 
 using namespace std;
 
-int HashFunctionHorner(const std::string& s, int table_size, const int key)
-{
-    int hash_result = 0;
-    for (int i = 0; s[i] != s.size(); ++i)
-        hash_result = (key * hash_result + s[i]) % table_size;
-    hash_result = (hash_result * 2 + 1) % table_size;
-    return hash_result;
+void testTable(BaseTable<int, int>* table) {
+    table->insert(1, 100);
+    table->insert(2, 104);
+    table->insert(3, 98);
+    table->insert(4, 106);
+    table->remove(2);
+    auto it1 = table->find(3);
+    if (it1 != table->end())
+        cout << *it1 << endl;
+    auto it2 = table->find(2);
+    if (it2 == table->end())
+        cout << "There is no element with key = 2 after remove" << endl << endl;
 }
-struct HashFunction1
-{
-    int operator()(const std::string& s, int table_size) const
-    {
-        return HashFunctionHorner(s, table_size, table_size - 1); // ключи должны быть взаимопросты, используем числа <размер таблицы> плюс и минус один.
-    }
-};
-struct HashFunction2
-{
-    int operator()(const std::string& s, int table_size) const
-    {
-        return HashFunctionHorner(s, table_size, table_size + 1);
-    }
-};
 
-void tableTest()
-{
-    SimpleTable<int, int> table;
-    table.insert(1, 2);
-    table.insert(2, 3);
-    auto res = table.find(1);
-    cout << *res << endl;
-    cout << table.getSize() << endl;
-    vector<int> t;
+void testAvl(AVLTree<int, int>* tree) {
+    tree->insert(1, 100);
+    tree->insert(2, 104);
+    tree->insert(3, 98);
+    tree->insert(4, 106);
+    tree->remove(2);
+    pair<int, int>* elem = tree->find(3);
+    if (elem != nullptr)
+        cout << elem->second << endl;
+
+    pair<int, int>* elem2 = tree->find(2);
+    if (elem2 == nullptr)
+        cout << "There is no element with key = 2 after remove" << endl << endl;  
 }
-void timeTest()
+
+void testTables()
 {
-    // UNIX Time // POSIX-time
-    // 00:00:00 1.01.1970
-    int64_t t = getNowTime();
-    cout << t << endl;
-    struct tm tm;
-    localtime_s(&tm, &t);
-    char date[20];
-    strftime(date, sizeof(date), "%Y-%m-%d", &tm);
-    string d = date;
-    cout << d << endl;
-}
-void hashTabe()
-{
-    std::hash<int64_t> hash64; // hash64 - функтор
-    //cout << hash64(2) << " " << hash64(4) << " " << hash64(8) << " " << hash64(16) << " " << hash64(32) << " " << hash64(64) << endl;
-    //cout << hash64(128)<<" "<<hash64(256) << " " << hash64(512) << " " << hash64(1024) << " " << hash64(2048) << " "<< hash64(4096) << " " << hash64(8192) << endl;
-    //cout << hash64(1) << " " << hash64(2) << " " << hash64(3) << " " << hash64(4) << " " << hash64(5) << " " << hash64(6) << endl;
+    cout << "SimpleTable test" << std::endl;
+    SimpleTable<int, int>* table1 = new SimpleTable<int, int>();
+    testTable(table1);
 
-    // hash
-    // 1. детерминированная, key -> x1
-    // 2. быстрое вычисление
-    // 3. невозможность почитать по хэш функции изначальное значение ключа
-    // 4. небольшое изменение ключа должно прнивести к значительному изменению хеша
-    // 5. невозможность быстро найти ключи с одинаковой хеш функцией
+    cout << "SortTable test" << std::endl;
+    SortTable<int, int>* table2 = new SortTable<int, int>();
+    testTable(table2);
 
-    // Key % p = hash(key)
+    cout << "HashTable test" << std::endl;
+    HashTable<int, int>* table3 = new HashTable<int, int>();
+    testTable(table3);
 
-    // SHA-3
-    // N байт - 256 бит
-    // hash(x), x - 8 byte
-    // hash(25 byte) -> 1 byte -> 
+    cout << "AVL tree test" << std::endl;
+    AVLTree<int, int>* table4 = new AVLTree<int, int>();
+    testAvl(table4);
 
-    // SHA-3
-}
-void threadTest()
-{
-    StockMarket market;
-    Order req(Order::Type::BUY, 950, 100);
-    Order order(Order::Type::BUY, 900, 90);
-
-    const int numReq = 1000;
-
-    std::thread thread([&]() {
-        for (int i = 0; i < numReq; i++)
-        {
-            market.addRequestSafe(order);
-        }
-        });
-    int counter = 0;
-    while (counter != numReq)
-    {
-        if (market.processFirstRequestSafe())
-            counter++;
-    }
-    thread.join();
+    cout << endl;
 }
 
 void main()
 {
-    StockMarket market;
-
-    market.addRequestSafe(Registration(10));
-    market.addRequestSafe(Registration(12));
-
-    market.addRequestSafe(Order(Order::Type::BUY, 1000, 10));
-    market.addRequestSafe(Order(Order::Type::SELL, 1001, 12));
-    market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-
-
-    market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
-
-    auto order = Order(Order::Type::BUY, 100, 12);
-    market.addRequestSafe(order);
-    market.addRequestSafe(CancelOrder(order));
-
-    for (int i = 0; i < 10000; i++)
-        market.processFirstRequestSafe();
+    testTables();
 }
