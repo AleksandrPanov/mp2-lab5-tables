@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
-#include <ctime>
-#include <thread>
+//#include <ctime>
+//#include <thread>
 
 #include "table.h"
 #include "stock_market.h"
@@ -100,31 +100,43 @@ void threadTest()
     thread.join();
 }
 
-void main()
+int main()
 {
-    StockMarket market;
+    std::cout << "SimpleTable test" << std::endl;
+    SimpleTable<int, int> simpleTable;
+    simpleTable.insert(0, 5);
+    simpleTable.insert(15, 12);
+    simpleTable.insert(99, 8);
+    simpleTable.insert(4, 2);
+    simpleTable.print();
+    cout << "Remove value " << *(simpleTable.find(15)) << endl;
+    simpleTable.remove(15);
+    simpleTable.print();
+    cout << endl << endl;
 
-    market.addRequestSafe(Registration(10));
-    market.addRequestSafe(Registration(12));
+    std::cout << "SortTable test" << std::endl;
+    SortTable<int, int> sortTable;
+    sortTable.insert(0, 5);
+    sortTable.insert(15, 12);
+    sortTable.insert(99, 8);
+    sortTable.insert(4, 2);
+    sortTable.print();
+    cout << "Remove value " << *(sortTable.find(15)) << endl;
+    sortTable.remove(15);
+    sortTable.print();
+    cout << endl << endl;
 
-    market.addRequestSafe(Order(Order::Type::BUY, 1000, 10));
-    market.addRequestSafe(Order(Order::Type::SELL, 1001, 12));
-    market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
+    std::cout << "HashTable test" << std::endl;
+    HashTable<int, int> hashTable;
+    hashTable.insert(0, 5);
+    hashTable.insert(15, 12);
+    hashTable.insert(99, 8);
+    hashTable.insert(4, 2);
+    hashTable.print();
+    cout << "Remove value " << *(hashTable.find(15)) << endl;
+    hashTable.remove(15);
+    hashTable.print();
+    cout << endl << endl;
 
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-    market.addRequestSafe(Order(Order::Type::BUY, 1100, 10));
-
-
-    market.addRequestSafe(Order(Order::Type::SELL, 1000, 12));
-
-    auto order = Order(Order::Type::BUY, 100, 12);
-    market.addRequestSafe(order);
-    market.addRequestSafe(CancelOrder(order));
-
-    for (int i = 0; i < 10000; i++)
-        market.processFirstRequestSafe();
+    return 0;
 }
